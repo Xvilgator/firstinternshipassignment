@@ -10,10 +10,10 @@ public class Server
     static Vector<ClientHandler> totalClients = new Vector<>();
 
     // Vector to store active clients
-    static Vector<ClientHandler> ar = new Vector<>();
+    static Vector<ClientHandler> activeClients = new Vector<>();
      
     // counter for clients
-    static int i = 0;
+    static int clientCount = 0;
  
     public static void main(String[] args) throws IOException
     {
@@ -22,8 +22,7 @@ public class Server
          
         Socket s;
          
-        // running infinite loop for getting
-        // client request
+        // running infinite loop for getting client request
         while (true)
         {
             // Accept the incoming request
@@ -43,10 +42,10 @@ public class Server
             // Create a new Thread with this object.
             Thread t = new Thread(mtch);
              
-            System.out.println("Adding this client to active client list");
+            System.out.println("Adding this client to active and total client lists");
  
             // add this client to active clients list
-            ar.add(mtch);
+            activeClients.add(mtch);
             totalClients.add(mtch);
  
             // start the thread.
@@ -55,20 +54,23 @@ public class Server
             // increment i for new client.
             // i is used for naming only, and can be replaced
             // by any naming scheme
-            i++;
- 
+            clientCount++;
+
+            System.out.println("Total clients currently present: " + i);
+            System.out.println("Active clients currently present: " + activeClients.size());
         }
     }
 
     // Get the list of active clients
     public static String getActiveClientList() {
         StringBuilder clientList = new StringBuilder();
-        for (ClientHandler client : ar) {
-            clientList.append(client.toString()).append("\n");
+        for (ClientHandler client : activeClients) {
+            clientList.append(client.toName()).append("\n");
         }
         return clientList.toString();
     }
 
+    // Get the list of all clients on the server    
     public static String getTotalClientList(){
         StringBuilder totalClientList = new StringBuilder();
         for(ClientHandler client : totalClients) {
@@ -114,31 +116,35 @@ class ClientHandler implements Runnable
                     this.name = clientName;
                     System.out.println("Client connected: " + clientName);
                     this.isnameset = true; // Set the flag to indicate the name is set
+                    //this will prevent the client from having to enter their name for every action they carry out.
                 }
                 // receive the string
                 received = dis.readUTF();
                  
                 System.out.println(received);
-                 
+                
+                //login-logout functionality
                 if(received.equals("logout")){
-                    if(Server.ar.contains(this)){
-                        Server.ar.remove(this); // Remove from active client list
+                    if(Server.activeClients.contains(this)){
+                        Server.activeClients.remove(this); // Remove from active client list
                         dos.writeUTF("You have been logged out. Do you want to log in again? (Y/N)");
                         String logoutResponse = dis.readUTF();
                         if (logoutResponse.equalsIgnoreCase("N")) {
                             this.isloggedin = false;
                             break;
                         } else {
-                            Server.ar.add(this); // Add back to active client list
+                            Server.activeClients.add(this); // Add back to active client list
                         }
                     }
                 }
 
+                //if client requests the list of available clients
                 if(received.equals("getactiveclients")){
                     String activeClientList = Server.getActiveClientList();
                     dos.writeUTF("Active Clients:\n" + activeClientList);
                 }
 
+                //if client requests the list of all clients on the server
                 if(received.equals("getallclients")){
                     String allClientList = Server.getTotalClientList();
                     dos.writeUTF("All Clients:\n" + allClientList);
@@ -150,20 +156,20 @@ class ClientHandler implements Runnable
                 String recipient = st.nextToken();
  
                 // search for the recipient in the connected devices list.
-                // ar is the vector storing client of active users
+                // activeClients is a vector which is storing and managing all clients who are logged in.
                 boolean recipientFound = false;
                 boolean recipientLoggedIn = false;
 
                 if (recipient.equals("all")) {
                     // Broadcast the message to all logged-in clients
-                    for (ClientHandler mc : Server.ar) {
+                    for (ClientHandler mc : Server.activeClients) {
                         if (mc.isloggedin) {
                             mc.dos.writeUTF(this.name + " : " + MsgToSend);
                         }
                     }   
                 } else {
                     // search for the recipient in the connected devices list.
-                    for (ClientHandler mc : Server.ar) {
+                    for (ClientHandler mc : Server.activeClients) {
                         // if the recipient is found and logged in, write on its output stream
                         if (mc.name.equals(recipient) && mc.isloggedin) {
                             recipientFound = true;
@@ -210,8 +216,17 @@ class ClientHandler implements Runnable
         }
     }
 
+    //String converters for the Client Handler class which can be used to print the names of the client as required in the two listing functions.
+    //Edit these funtions and the constructor for any further data of the client which you wish to relay as per request.
+    public String toName(){
+        return "Client " + this.name;
+    }
+
     @Override
     public String toString(){
-        return "Client " + this.name;
+        if(isloggedin){
+            return "Client " + this.name + ", logged in";
+        }
+        return "Client" + this.name + ", logged out";
     }
 }
