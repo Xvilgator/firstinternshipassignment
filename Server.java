@@ -13,7 +13,7 @@ public class Server
     static Vector<ClientHandler> activeClients = new Vector<>();
      
     // counter for clients
-    static int clientCount = 0;
+    static int i = 0;
  
     public static void main(String[] args) throws IOException
     {
@@ -52,9 +52,8 @@ public class Server
             t.start();
  
             // increment i for new client.
-            // i is used for naming only, and can be replaced
-            // by any naming scheme
-            clientCount++;
+            // i is just the total client count.
+            i++;
 
             System.out.println("Total clients currently present: " + i);
             System.out.println("Active clients currently present: " + activeClients.size());
@@ -124,20 +123,32 @@ class ClientHandler implements Runnable
                 System.out.println(received);
                 
                 //login-logout functionality
-                if(received.equals("logout")){
-                    if(Server.activeClients.contains(this)){
+                if (received.equals("logout")) {
+                    boolean removeFromActiveList = false;
+                    if (Server.activeClients.contains(this)) {
                         Server.activeClients.remove(this); // Remove from active client list
-                        dos.writeUTF("You have been logged out. Do you want to log in again? (Y/N)");
+                        dos.writeUTF("You have been logged out. Do you want to exit the server? (Y/N)");
                         String logoutResponse = dis.readUTF();
                         if (logoutResponse.equalsIgnoreCase("N")) {
+                            removeFromActiveList = true;
+                        } else if (logoutResponse.equalsIgnoreCase("Y")) {
+                            Server.totalClients.remove(this); // Remove from total client list
                             this.isloggedin = false;
                             break;
-                        } else {
-                            Server.activeClients.add(this); // Add back to active client list
+                        }
+                    }
+                    if (removeFromActiveList) {
+                        while (true){
+                            dos.writeUTF("Do you want to log back in? (Y/N)");
+                            String loginResponse = dis.readUTF();
+                            if (loginResponse.equalsIgnoreCase("Y")) {
+                                Server.activeClients.add(this); // Add back to active client list
+                                break;
+                            }
                         }
                     }
                 }
-
+            
                 //if client requests the list of available clients
                 if(received.equals("getactiveclients")){
                     String activeClientList = Server.getActiveClientList();
