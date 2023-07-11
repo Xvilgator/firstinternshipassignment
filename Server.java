@@ -143,25 +143,34 @@ class ClientHandler implements Runnable
                 // ar is the vector storing client of active users
                 boolean recipientFound = false;
                 boolean recipientLoggedIn = false;
-                
-                // search for the recipient in the connected devices list.
-                for (ClientHandler mc : Server.ar) {
-                    // if the recipient is found and logged in, write on its output stream
-                    if (mc.name.equals(recipient) && mc.isloggedin) {
-                        recipientFound = true;
-                        recipientLoggedIn = true;
-                        if (MsgToSend.equals("getclients")) {
-                            String activeClientList = Server.getActiveClientList();
-                            mc.dos.writeUTF("Active Clients:\n" + activeClientList);
-                        } else if (MsgToSend.equals("getallclients")) {
-                            String allClientList = Server.getTotalClientList();
-                            mc.dos.writeUTF("All Clients:\n" + allClientList);
-                        } else {
+
+                if (recipient.equals("all")) {
+                    // Broadcast the message to all logged-in clients
+                    for (ClientHandler mc : Server.ar) {
+                        if (mc.isloggedin) {
                             mc.dos.writeUTF(this.name + " : " + MsgToSend);
                         }
-                        break;
+                    }   
+                } else {
+                    // search for the recipient in the connected devices list.
+                    for (ClientHandler mc : Server.ar) {
+                        // if the recipient is found and logged in, write on its output stream
+                        if (mc.name.equals(recipient) && mc.isloggedin) {
+                            recipientFound = true;
+                            recipientLoggedIn = true;
+                            if (MsgToSend.equals("getclients")) {
+                                String activeClientList = Server.getActiveClientList();
+                                mc.dos.writeUTF("Active Clients:\n" + activeClientList);
+                            } else if (MsgToSend.equals("getallclients")) {
+                                String allClientList = Server.getTotalClientList();
+                                mc.dos.writeUTF("All Clients:\n" + allClientList);
+                            } else {
+                                mc.dos.writeUTF(this.name + " : " + MsgToSend);
+                            }
+                            break;
+                        }           
                     }
-                
+
                     // If recipient not found in active client list, check in total client list
                     if (!recipientFound) {
                         for (ClientHandler mc : Server.totalClients) {
@@ -171,12 +180,12 @@ class ClientHandler implements Runnable
                             }
                         }
                     }
-                
+
                     // Send appropriate message to the client
                     if (!recipientFound) {
-                        dos.writeUTF("The recipient does not exist.");
+                    dos.writeUTF("The recipient does not exist.");
                     } else if (!recipientLoggedIn) {
-                        dos.writeUTF("The recipient has logged out.");
+                    dos.writeUTF("The recipient has logged out.");
                     }
                 }
 
