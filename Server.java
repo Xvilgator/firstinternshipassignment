@@ -52,7 +52,8 @@ public class Server
             t.start();
  
             // increment i for new client.
-            // i is just the total client count.
+            // i is used for naming only, and can be replaced
+            // by any naming scheme
             i++;
 
             System.out.println("Total clients currently present: " + i);
@@ -127,13 +128,13 @@ class ClientHandler implements Runnable
                     boolean removeFromActiveList = false;
                     if (Server.activeClients.contains(this)) {
                         Server.activeClients.remove(this); // Remove from active client list
+                        this.isloggedin = false;
                         dos.writeUTF("You have been logged out. Do you want to exit the server? (Y/N)");
                         String logoutResponse = dis.readUTF();
                         if (logoutResponse.equalsIgnoreCase("N")) {
                             removeFromActiveList = true;
                         } else if (logoutResponse.equalsIgnoreCase("Y")) {
                             Server.totalClients.remove(this); // Remove from total client list
-                            this.isloggedin = false;
                             break;
                         }
                     }
@@ -185,6 +186,7 @@ class ClientHandler implements Runnable
                         if (mc.name.equals(recipient) && mc.isloggedin) {
                             recipientFound = true;
                             recipientLoggedIn = true;
+                            mc.dos.writeUTF(this.name + " : " + MsgToSend); // Print the message on the recipient's side
                             break;
                         }           
                     }
