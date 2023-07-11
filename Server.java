@@ -133,6 +133,16 @@ class ClientHandler implements Runnable
                         }
                     }
                 }
+
+                if(received.equals("getactiveclients")){
+                    String activeClientList = Server.getActiveClientList();
+                    dos.writeUTF("Active Clients:\n" + activeClientList);
+                }
+
+                if(received.equals("getallclients")){
+                    String allClientList = Server.getTotalClientList();
+                    dos.writeUTF("All Clients:\n" + allClientList);
+                }
                  
                 // break the string into message and recipient part
                 StringTokenizer st = new StringTokenizer(received, "#");
@@ -158,15 +168,6 @@ class ClientHandler implements Runnable
                         if (mc.name.equals(recipient) && mc.isloggedin) {
                             recipientFound = true;
                             recipientLoggedIn = true;
-                            if (MsgToSend.equals("getclients")) {
-                                String activeClientList = Server.getActiveClientList();
-                                mc.dos.writeUTF("Active Clients:\n" + activeClientList);
-                            } else if (MsgToSend.equals("getallclients")) {
-                                String allClientList = Server.getTotalClientList();
-                                mc.dos.writeUTF("All Clients:\n" + allClientList);
-                            } else {
-                                mc.dos.writeUTF(this.name + " : " + MsgToSend);
-                            }
                             break;
                         }           
                     }
