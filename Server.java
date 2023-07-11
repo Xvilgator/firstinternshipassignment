@@ -1,6 +1,8 @@
 import java.io.*;
 import java.util.*;
 import java.net.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
  
 // Server class
 public class Server
@@ -11,8 +13,6 @@ public class Server
 
     // Vector to store active clients
     static Vector<ClientHandler> activeClients = new Vector<>();
-
-    System.out.println("Server is listening on port 1234");
      
     // counter for clients
     static int i = 0;
@@ -23,6 +23,8 @@ public class Server
         ServerSocket ss = new ServerSocket(1234);
          
         Socket s;
+
+        System.out.println("Server is listening on port 1234");
          
         // running infinite loop for getting client request
         while (true)
@@ -43,7 +45,7 @@ public class Server
  
             // Create a new Thread with this object.
             Thread t = new Thread(mtch);
-             
+
             System.out.println("Adding this client to active and total client lists");
  
             // add this client to active clients list
@@ -162,7 +164,40 @@ class ClientHandler implements Runnable
                     String allClientList = Server.getTotalClientList();
                     dos.writeUTF("All Clients:\n" + allClientList);
                 }
-                 
+
+                //Message scheduler
+                if (received.equals("schedule")) {
+                    dos.writeUTF("Enter the message#recipient to be scheduled:");
+                    String scheduledText = dis.readUTF();
+
+                    //break the string into message and recipient part
+                    StringTokenizer st = new StringTokenizer(scheduledText, "#");
+                    String scheduledMsgToSend = st.nextToken();
+                    String recipient = st.nextToken();
+
+                    dos.writeUTF("Enter the duration in seconds:");
+                    int duration = Integer.parseInt(dis.readUTF());
+                    LocalDateTime scheduledTime = LocalDateTime.now().plusSeconds(duration);
+
+                    // Create a new thread for scheduling and sending the message
+                    Thread schedulerThread = new Thread(() -> {
+                        try {
+                            // Sleep until the scheduled time
+                            Thread.sleep(duration * 1000);
+
+                            // Send the scheduled message to the recipient
+                            sendMessage(scheduledMsgToSend, recipient);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            System.out.println("Invalid input" + e);
+                        }
+                    });
+
+                    // Start the scheduler thread
+                    schedulerThread.start();
+                }
+
                 // break the string into message and recipient part
                 StringTokenizer st = new StringTokenizer(received, "#");
                 String MsgToSend = st.nextToken();
@@ -238,9 +273,50 @@ class ClientHandler implements Runnable
 
     @Override
     public String toString(){
-        if(isloggedin){
+        if(this.isloggedin){
             return "Client " + this.name + ", logged in";
         }
         return "Client" + this.name + ", logged out";
+    }
+
+    //Boolean checker
+    public boolean isNameSet(){
+        if(this.isnameset){
+            return true;
+        }
+        return false;
+    }
+
+    // Method to send a message to a recipient
+    private void sendMessage(String message, String recipient) throws IOException {
+        boolean recipientFound = false;
+        boolean recipientLoggedIn = false;
+
+        // Search for the recipient in the active client list
+        for (ClientHandler mc : Server.activeClients) {
+            if (mc.name.equals(recipient) && mc.isloggedin) {
+                recipientFound = true;
+                mc.dos.writeUTF("[Scheduled Message] " + this.name + " : " + message);
+                break;
+            }
+        }
+
+        // If recipient not found in active client list, check in total client list
+        if (!recipientFound) {
+            for (ClientHandler mc : Server.totalClients) {
+                if (mc.name.equals(recipient)) {
+                    recipientFound = true;
+                    recipientLoggedIn = false;
+                    break;
+                }
+            }
+        }
+
+        // Send appropriate message to the client
+        if (!recipientFound) {
+            dos.writeUTF("The recipient does not exist.");
+        } else if (!recipientLoggedIn) {
+            dos.writeUTF("The recipient has logged out.");
+        }
     }
 }
