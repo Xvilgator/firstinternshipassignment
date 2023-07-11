@@ -11,6 +11,8 @@ public class Server
 
     // Vector to store active clients
     static Vector<ClientHandler> activeClients = new Vector<>();
+
+    System.out.println("Server is listening on port 1234");
      
     // counter for clients
     static int i = 0;
@@ -52,11 +54,10 @@ public class Server
             t.start();
  
             // increment i for new client.
-            // i is used for naming only, and can be replaced
-            // by any naming scheme
+            // i is the total number of entries any number of clients have made into the program
             i++;
-
-            System.out.println("Total clients currently present: " + i);
+            
+            System.out.println("Total clients currently present: " + totalClients.size());
             System.out.println("Active clients currently present: " + activeClients.size());
         }
     }
